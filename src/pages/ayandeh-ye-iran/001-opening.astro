@@ -1,0 +1,448 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const base = import.meta.env.BASE_URL;
+
+// Speaker data
+const speakers = [
+  { id: '01-ferdowsi', name: 'Ferdowsi', native: 'فردوسی', icon: '🏛️', epithet: 'The Epic Voice' },
+  { id: '02-saadi', name: 'Saʿdi', native: 'سعدی', icon: '⚖️', epithet: 'The Moral Compass' },
+  { id: '03-rumi', name: 'Rumi', native: 'مولانا', icon: '🌀', epithet: 'The Universal Soul' },
+  { id: '04-avicenna', name: 'Avicenna', native: 'ابن سینا', icon: '🧠', epithet: 'The Rational Mind' },
+  { id: '05-albiruni', name: 'Al-Biruni', native: 'بیرونی', icon: '🔭', epithet: 'The Scientific Eye' },
+  { id: '06-khayyam', name: 'Omar Khayyam', native: 'عمر خیام', icon: '🍷', epithet: 'The Skeptical Mathematician' },
+  { id: '07-hafez', name: 'Hafez', native: 'حافظ', icon: '🌹', epithet: 'The Heretic', isHeretic: true },
+];
+
+// Read speech content from files
+const speechesDir = path.join(process.cwd(), 'src/content/ayandeh-ye-iran/001-opening');
+const speeches: Record<string, string> = {};
+
+for (const speaker of speakers) {
+  const filePath = path.join(speechesDir, `${speaker.id}.md`);
+  try {
+    speeches[speaker.id] = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    speeches[speaker.id] = '';
+  }
+}
+---
+
+<BaseLayout title="Opening Session — Āyandeh-ye Irān" description="The seven speakers address the central question: What future can be imagined for Iran?">
+  <div class="opening-session">
+    <section class="hero">
+      <div class="hero-pattern"></div>
+      <div class="container hero-content">
+        <a href={`${base}/ayandeh-ye-iran`} class="back-link">← Symposium Overview</a>
+        <p class="session-label">Session 001</p>
+        <h1>Opening: The Gathering</h1>
+        <p class="hero-subtitle">In which the seven are convened and the question is posed</p>
+        <div class="hero-ornament">✦ ✦ ✦</div>
+      </div>
+    </section>
+
+    <section class="question-section container">
+      <blockquote class="question-block">
+        <p class="question-persian">چه آینده‌ای برای ایران متصور است؟</p>
+        <p class="question-english">What future can be imagined for Iran?</p>
+        <p class="question-sub">And what role does our intellectual heritage play in shaping it?</p>
+      </blockquote>
+    </section>
+
+    <nav class="speaker-nav container">
+      <p class="nav-label">Jump to speaker:</p>
+      <div class="nav-links">
+        {speakers.map((speaker) => (
+          <a href={`#${speaker.id}`} class={speaker.isHeretic ? 'heretic' : ''}>
+            <span class="nav-icon">{speaker.icon}</span>
+            <span class="nav-name">{speaker.name}</span>
+          </a>
+        ))}
+      </div>
+    </nav>
+
+    <section class="speeches container">
+      {speakers.map((speaker, index) => (
+        <article id={speaker.id} class={`speech ${speaker.isHeretic ? 'heretic' : ''}`}>
+          <header class="speech-header">
+            <div class="speaker-info">
+              <span class="speaker-icon">{speaker.icon}</span>
+              <div>
+                <span class="speaker-number">{index + 1}</span>
+                <h2>{speaker.name}</h2>
+                <p class="speaker-native">{speaker.native}</p>
+                <p class="speaker-epithet">{speaker.epithet}</p>
+              </div>
+            </div>
+            {speaker.isHeretic && (
+              <div class="heretic-badge">
+                <span>⚠️ INTERRUPTION</span>
+              </div>
+            )}
+          </header>
+          
+          <div class="speech-content" set:html={speeches[speaker.id]
+            .replace(/^#.*\n/gm, '') // Remove markdown headers
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+            .replace(/^> (.*)/gm, '<blockquote>$1</blockquote>') // Blockquotes
+            .replace(/\n\n/g, '</p><p>') // Paragraphs
+            .replace(/^/, '<p>')
+            .replace(/$/, '</p>')
+          } />
+          
+          <footer class="speech-footer">
+            <span class="reading-time">~7 min read</span>
+          </footer>
+        </article>
+      ))}
+    </section>
+
+    <section class="closing container">
+      <div class="session-end">
+        <p class="end-label">End of Session 001</p>
+        <div class="hero-ornament">✦ ✦ ✦</div>
+        <a href={`${base}/ayandeh-ye-iran`} class="return-link">Return to Symposium Overview →</a>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap');
+
+  .opening-session {
+    --lapis-deep: #1a3a5c;
+    --lapis: #234b6e;
+    --turquoise: #1abc9c;
+    --gold: #d4af37;
+    --gold-light: #e6c55a;
+    --rose: #c94c4c;
+    --cream: #faf8f5;
+    --parchment: #f5f0e6;
+    --ink: #1a1a1a;
+    
+    background: var(--cream);
+  }
+
+  .hero {
+    background: linear-gradient(135deg, var(--lapis-deep) 0%, var(--lapis) 100%);
+    color: var(--cream);
+    padding: var(--space-6) 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-pattern {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.6;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: var(--space-3);
+    opacity: 0.9;
+  }
+
+  .back-link:hover {
+    opacity: 1;
+  }
+
+  .session-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: var(--space-2) !important;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: var(--space-2);
+  }
+
+  .hero-subtitle {
+    font-style: italic;
+    opacity: 0.9;
+    font-size: 1rem;
+    margin-bottom: var(--space-3) !important;
+  }
+
+  .hero-ornament {
+    color: var(--gold);
+    letter-spacing: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .question-section {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .question-block {
+    background: var(--parchment);
+    border: none;
+    border-left: 4px solid var(--gold);
+    padding: var(--space-4);
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .question-persian {
+    font-family: 'Scheherazade New', serif;
+    font-size: 1.6rem;
+    direction: rtl;
+    color: var(--lapis);
+    margin-bottom: var(--space-2) !important;
+  }
+
+  .question-english {
+    font-style: italic;
+    font-size: 1.1rem;
+    margin-bottom: var(--space-1) !important;
+  }
+
+  .question-sub {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0 !important;
+  }
+
+  .speaker-nav {
+    padding: var(--space-4) var(--space-4);
+    background: white;
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2) !important;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .nav-links a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--parchment);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .nav-links a:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: white;
+  }
+
+  .nav-links a.heretic {
+    border-color: var(--rose);
+    background: rgba(201, 76, 76, 0.1);
+  }
+
+  .nav-links a.heretic:hover {
+    background: var(--rose);
+    color: white;
+  }
+
+  .nav-icon {
+    font-size: 1rem;
+  }
+
+  .speeches {
+    padding: var(--space-5) var(--space-4);
+    max-width: 800px;
+  }
+
+  .speech {
+    margin-bottom: var(--space-7);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .speech.heretic {
+    background: linear-gradient(to right, rgba(201, 76, 76, 0.08), transparent);
+    padding: var(--space-4);
+    margin-left: calc(-1 * var(--space-4));
+    margin-right: calc(-1 * var(--space-4));
+    border: 2px solid var(--rose);
+    border-bottom: 2px solid var(--rose);
+  }
+
+  .speech-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-4);
+  }
+
+  .speaker-info {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+  }
+
+  .speaker-icon {
+    font-size: 2rem;
+  }
+
+  .speaker-number {
+    display: inline-block;
+    font-size: 0.75rem;
+    background: var(--gold);
+    color: white;
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    margin-bottom: var(--space-1);
+  }
+
+  .speech.heretic .speaker-number {
+    background: var(--rose);
+  }
+
+  .speech-header h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0;
+  }
+
+  .speaker-native {
+    font-family: 'Scheherazade New', serif;
+    font-size: 1.3rem;
+    direction: rtl;
+    color: var(--lapis);
+    margin-bottom: 0 !important;
+  }
+
+  .speaker-epithet {
+    font-style: italic;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0 !important;
+  }
+
+  .heretic-badge {
+    background: var(--rose);
+    color: white;
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .speech-content {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: var(--ink);
+  }
+
+  .speech-content p {
+    margin-bottom: var(--space-3);
+  }
+
+  .speech-content blockquote {
+    font-family: 'Scheherazade New', serif;
+    font-size: 1.2rem;
+    background: var(--parchment);
+    padding: var(--space-3);
+    margin: var(--space-4) 0;
+    border-left: 3px solid var(--gold);
+    direction: rtl;
+    text-align: center;
+  }
+
+  .speech-content strong {
+    color: var(--lapis);
+  }
+
+  .speech-footer {
+    margin-top: var(--space-4);
+    padding-top: var(--space-2);
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .reading-time {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .closing {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+  }
+
+  .session-end {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .end-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3) !important;
+  }
+
+  .return-link {
+    display: inline-block;
+    margin-top: var(--space-4);
+    color: var(--lapis);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .return-link:hover {
+    color: var(--gold);
+  }
+
+  @media (max-width: 768px) {
+    .speech-header {
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .nav-links {
+      gap: var(--space-1);
+    }
+
+    .nav-links a {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.5rem;
+    }
+
+    .nav-name {
+      display: none;
+    }
+  }
+</style>

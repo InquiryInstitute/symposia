@@ -122,7 +122,7 @@ const base = import.meta.env.BASE_URL;
             <h3>Opening: The Gathering</h3>
             <p>In which the six are convened and the question is posed.</p>
           </div>
-          <span class="session-status draft">Draft</span>
+          <span class="session-status available">Available</span>
         </a>
         
         <div class="session-card planned">
@@ -444,6 +444,11 @@ const base = import.meta.env.BASE_URL;
     padding: var(--space-1) var(--space-2);
     border-radius: 2px;
     background: var(--lapis);
+    color: white;
+  }
+
+  .session-status.available {
+    background: var(--turquoise);
     color: white;
   }
 
