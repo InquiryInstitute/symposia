@@ -1,0 +1,19 @@
+{
+  "name": "symposia",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "A living archive of imagined dialogues between history's great minds",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InquiryInstitute/symposia"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.16.16"
+  }
+}
