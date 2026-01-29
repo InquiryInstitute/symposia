@@ -13,6 +13,18 @@ const base = import.meta.env.BASE_URL;
         <p class="hero-subtitle">Symposium on the Future of Iran</p>
         <p class="hero-format">6 voices × 5-8 minutes • ~1 hour</p>
         <div class="hero-ornament">✦ ✦ ✦</div>
+        
+        <!-- Watch Presentation CTA -->
+        <div class="hero-cta">
+          <a href="https://inquiry.institute/symposia/ayandeh-ye-iran/present" class="cta-button primary" target="_blank">
+            <span class="cta-icon">▶</span>
+            Watch Presentation
+            <span class="cta-badge">with AI voices</span>
+          </a>
+          <a href={`${base}/ayandeh-ye-iran/001-opening`} class="cta-button secondary">
+            Read Transcripts →
+          </a>
+        </div>
       </div>
     </section>
 
@@ -115,6 +127,17 @@ const base = import.meta.env.BASE_URL;
 
     <section class="sessions container">
       <h2>Sessions</h2>
+      
+      <!-- Presentation Mode Banner -->
+      <a href="https://inquiry.institute/symposia/ayandeh-ye-iran/present" class="presentation-banner" target="_blank">
+        <div class="presentation-icon">🎭</div>
+        <div class="presentation-info">
+          <h3>Interactive Presentation Mode</h3>
+          <p>Watch the symposium with AI-generated voices, animated busts, and real-time subtitles. Submit questions for the Q&A session!</p>
+        </div>
+        <span class="presentation-cta">Launch ↗</span>
+      </a>
+      
       <div class="sessions-list">
         <a href={`${base}/ayandeh-ye-iran/001-opening`} class="session-card">
           <span class="session-number">001</span>
@@ -225,6 +248,62 @@ const base = import.meta.env.BASE_URL;
     color: var(--gold);
     letter-spacing: 0.5rem;
     font-size: 1.2rem;
+  }
+
+  .hero-cta {
+    margin-top: var(--space-5);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .cta-button.primary {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--ink);
+    font-size: 1.1rem;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+  }
+
+  .cta-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
+  }
+
+  .cta-button.secondary {
+    background: transparent;
+    color: var(--cream);
+    border: 1px solid var(--gold);
+    font-size: 0.95rem;
+  }
+
+  .cta-button.secondary:hover {
+    background: rgba(212, 175, 55, 0.15);
+  }
+
+  .cta-icon {
+    font-size: 0.9em;
+  }
+
+  .cta-badge {
+    font-size: 0.7em;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .overview {
@@ -389,7 +468,56 @@ const base = import.meta.env.BASE_URL;
   }
 
   .sessions h2 {
+    margin-bottom: var(--space-4);
+  }
+
+  .presentation-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: linear-gradient(135deg, var(--lapis-deep), var(--lapis));
+    padding: var(--space-4) var(--space-5);
+    border-radius: 12px;
     margin-bottom: var(--space-5);
+    text-decoration: none;
+    color: white;
+    transition: all 0.3s ease;
+    border: 2px solid var(--gold);
+  }
+
+  .presentation-banner:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.25);
+  }
+
+  .presentation-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .presentation-info {
+    flex: 1;
+  }
+
+  .presentation-info h3 {
+    color: var(--gold);
+    margin-bottom: var(--space-1);
+    font-size: 1.2rem;
+  }
+
+  .presentation-info p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .presentation-cta {
+    background: var(--gold);
+    color: var(--ink);
+    padding: var(--space-2) var(--space-4);
+    border-radius: 6px;
+    font-weight: 600;
+    flex-shrink: 0;
   }
 
   .sessions-list {
@@ -494,6 +622,25 @@ const base = import.meta.env.BASE_URL;
 
     .hero-persian {
       font-size: 1.8rem;
+    }
+
+    .hero-cta {
+      flex-direction: column;
+    }
+
+    .cta-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .presentation-banner {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .presentation-cta {
+      width: 100%;
+      text-align: center;
     }
 
     .session-card {
