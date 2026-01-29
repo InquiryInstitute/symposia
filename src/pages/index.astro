@@ -52,6 +52,27 @@ const base = import.meta.env.BASE_URL;
       </div>
     </a>
 
+    <a href={`${base}absinthe/`} class="symposium-card absinthe-theme">
+      <div class="symposium-card-flag">🍃</div>
+      <div class="symposium-card-content">
+        <h3>Symposion of the Green Fairy</h3>
+        <p class="symposium-card-subtitle">Symposium on Absinthe</p>
+        <p class="symposium-card-desc">
+          Seven witnesses to absinthe gather—those who lived with it, loved it, abused it, 
+          ritualized it, and made art or magic through it. Not theorists, but practitioners.
+        </p>
+        <div class="symposium-card-speakers">
+          <span>Van Gogh</span>
+          <span>Crowley</span>
+          <span>Wilde</span>
+          <span>Toulouse-Lautrec</span>
+          <span>Pasteur</span>
+          <span>Foucault</span>
+          <span class="special">Verlaine ✦</span>
+        </div>
+      </div>
+    </a>
+
     <div class="coming-soon">
       <p class="text-muted">More symposia coming soon...</p>
     </div>
@@ -186,6 +207,11 @@ const base = import.meta.env.BASE_URL;
   /* Persian theme accent for Iran symposium */
   .iran-theme {
     border-left: 4px solid #d4af37;
+  }
+
+  /* Absinthe theme accent */
+  .absinthe-theme {
+    border-left: 4px solid #7fb069;
   }
 
   .coming-soon {
