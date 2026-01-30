@@ -1,18 +1,16 @@
-import { useState, useEffect } from 'react';
-import { fetchFacultyByHandleFromEdgeFunction } from '../../lib/supabase-edge-functions';
+/**
+ * Absinthe Symposium Presentation
+ * Wrapper component that configures the generic SymposiumPresentation
+ */
 
-interface Speaker {
-  id: string;
-  name: string;
-  epithet: string;
-  isHeretic?: boolean;
-  voice?: string;
-  voiceRate?: number;
-  bustFrontalUrl?: string;
-  bustRightUrl?: string;
-}
+import SymposiumPresentation, {
+  type SpeakerConfig,
+  type FallbackVoice,
+  type SymposiumTheme,
+  type LanguageSupport,
+} from './SymposiumPresentation';
 
-const SPEAKER_CONFIG: Speaker[] = [
+const SPEAKER_CONFIG: SpeakerConfig[] = [
   { id: 'a.gogh', name: 'Vincent van Gogh', epithet: 'The Martyr' },
   { id: 'a.crowley', name: 'Aleister Crowley', epithet: 'The Magus' },
   { id: 'a.wilde', name: 'Oscar Wilde', epithet: 'The Wit' },
@@ -22,20 +20,16 @@ const SPEAKER_CONFIG: Speaker[] = [
   { id: 'a.verlaine', name: 'Paul Verlaine', epithet: 'The Heretic', isHeretic: true },
 ];
 
-// Fallback voices if Supabase fetch fails
-// Multilingual voices with appropriate accents for each speaker
-const FALLBACK_VOICES: Record<string, { voice: string; rate: number }> = {
-  'a.gogh': { voice: 'nl-NL-MaartenNeural', rate: 0.95 }, // Dutch accent (van Gogh was Dutch)
-  'a.crowley': { voice: 'en-GB-RyanNeural', rate: 0.98 }, // British English
-  'a.wilde': { voice: 'en-IE-ConnorNeural', rate: 0.92 }, // Irish English (Wilde was Irish)
-  'a.toulouse-lautrec': { voice: 'fr-FR-LucienMultilingualNeural', rate: 0.90 }, // French
-  'a.pasteur': { voice: 'fr-FR-AlainNeural', rate: 0.93 }, // French
-  'a.foucault': { voice: 'fr-FR-AlainNeural', rate: 0.96 }, // French (more formal)
-  'a.verlaine': { voice: 'fr-FR-HenriNeural', rate: 1.00 }, // French (his speech is in French!)
+const FALLBACK_VOICES: Record<string, FallbackVoice> = {
+  'a.gogh': { voice: 'nl-NL-MaartenNeural', rate: 0.95, language: 'nl-NL', accent: 'Dutch' },
+  'a.crowley': { voice: 'en-GB-RyanNeural', rate: 0.98, language: 'en-GB', accent: 'British English' },
+  'a.wilde': { voice: 'en-IE-ConnorNeural', rate: 0.92, language: 'en-IE', accent: 'Irish English' },
+  'a.toulouse-lautrec': { voice: 'fr-FR-LucienMultilingualNeural', rate: 0.90, language: 'fr-FR', accent: 'French' },
+  'a.pasteur': { voice: 'fr-FR-AlainNeural', rate: 0.93, language: 'fr-FR', accent: 'French' },
+  'a.foucault': { voice: 'fr-FR-AlainNeural', rate: 0.96, language: 'fr-FR', accent: 'French' },
+  'a.verlaine': { voice: 'fr-FR-HenriNeural', rate: 1.00, language: 'fr-FR', accent: 'French' },
 };
 
-// Speech content - 5-8 minutes each (~750-1200 words at 150 wpm)
-// Generated via ask-faculty edge function
 const SPEECHES: Record<string, string> = {
   'a-gogh': `The green of the absinthe, that liquid fire, is not merely a hue but a vibration that seems to unspool the very air around the glass. When the light catches its surface it throws a halo, a thin luminous ring, that makes the world beyond the rim tremble as if it were a field of wheat under a sudden gust. I have tried to catch that trembling in paint—see how the stars in *Starry Night* whirl, how the wheat in *The Harvest* sways, how the night sky itself seems to pulse with an inner green fire. The glass becomes a prism for the mind, a lens that magnifies the colour already present in our souls.
 
@@ -133,92 +127,64 @@ Je vous laisse avec ce dernier vers, né d'une nuit où le verre était plein, m
 Que nos voix, aujourd'hui, portent ce cri, non pas pour condamner, mais pour rappeler la fragilité de l'homme qui, sous le feu de la poésie, doit encore choisir la lumière ou la chute.`,
 };
 
-export default function AbsinthePresentation() {
-  const [speakers, setSpeakers] = useState<Speaker[]>(SPEAKER_CONFIG);
-  const [dataLoaded, setDataLoaded] = useState(false);
+const THEME: SymposiumTheme = {
+  primary: '#2d5016', // Dark green
+  secondary: '#7fb069', // Medium green
+  accent: '#d4af37', // Gold
+  background: 'linear-gradient(135deg, #2d5016 0%, #7fb069 100%)',
+  text: '#f5f0e6', // Cream
+};
 
-  useEffect(() => {
-    async function loadSpeakerData() {
-      try {
-        const loadedSpeakers = await Promise.all(
-          SPEAKER_CONFIG.map(async (speaker) => {
-            try {
-              const data = await fetchFacultyByHandleFromEdgeFunction(speaker.id);
-              if (data) {
-                return {
-                  ...speaker,
-                  voice: data.voice_id || 'en-US-GuyNeural',
-                  voiceRate: data.voice_rate || 1.0,
-                  bustFrontalUrl: data.bust_frontal_url || `/busts/${speaker.id.replace('a.', '')}/bust.png`,
-                  bustRightUrl: data.bust_right_url || `/busts/${speaker.id.replace('a.', '')}/bust.png`,
-                };
-              }
-            } catch (err) {
-              console.warn(`Failed to load data for ${speaker.id}:`, err);
-            }
-            const fallback = FALLBACK_VOICES[speaker.id] || { voice: 'en-GB-RyanNeural', rate: 1.0 };
-            return {
-              ...speaker,
-              voice: fallback.voice,
-              voiceRate: fallback.rate,
-              bustFrontalUrl: `/busts/${speaker.id.replace('a.', '')}/bust.png`,
-              bustRightUrl: `/busts/${speaker.id.replace('a.', '')}/bust.png`,
-            };
-          })
-        );
-        setSpeakers(loadedSpeakers);
-        setDataLoaded(true);
-      } catch (err) {
-        console.error('Failed to load speaker data:', err);
-        setDataLoaded(true);
-      }
+const MATRIX_ROOM_URL = 'https://element.inquiry.institute/#/room/#absinthe:matrix.inquiry.institute';
+const MATRIX_ROOM_ALIAS = '#absinthe:matrix.inquiry.institute';
+
+// Optional: French language support for Verlaine's speech
+const LANGUAGE_SUPPORT: LanguageSupport = {
+  audioLanguages: [
+    { code: 'english', label: 'English' },
+    { code: 'french', label: 'French', nativeLabel: 'Français' },
+  ],
+  captionLanguages: [
+    { code: 'english', label: 'English' },
+    { code: 'french', label: 'French', nativeLabel: 'Français' },
+  ],
+  defaultAudioLanguage: 'english',
+  defaultCaptionLanguage: 'english',
+  getSpeechText: (speakerId: string, language: string) => {
+    const speechKey = speakerId.replace('a.', 'a-');
+    if (language === 'french' && speakerId === 'a.verlaine') {
+      // Verlaine's speech is in French
+      return SPEECHES[speechKey] || null;
     }
-    loadSpeakerData();
-  }, []);
+    // For other speakers, return English speech
+    return language === 'english' ? (SPEECHES[speechKey] || null) : null;
+  },
+  extractNativeText: (text: string) => {
+    // Extract French text (for Verlaine's speech)
+    const frenchLines = text.split('\n').filter(line => 
+      /[\u00C0-\u017F]/.test(line.trim()) && !line.trim().startsWith('>')
+    );
+    return frenchLines.length > 0 ? frenchLines.join('\n\n') : '';
+  },
+  containsNativeScript: (text: string) => {
+    return /[\u00C0-\u017F]/.test(text);
+  },
+};
 
+export default function AbsinthePresentation() {
   return (
-    <div style={{ 
-      minHeight: 'calc(100vh - 200px)', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      padding: '2rem',
-      background: 'linear-gradient(135deg, #2d5016 0%, #7fb069 100%)',
-      color: '#f5f0e6'
-    }}>
-      <h2 style={{ fontSize: '2rem', marginBottom: '1rem', fontFamily: 'Cinzel, serif' }}>
-        Symposion of the Green Fairy
-      </h2>
-      <p style={{ fontSize: '1.2rem', marginBottom: '2rem', textAlign: 'center', maxWidth: '600px' }}>
-        ✅ Speech content for all seven witnesses has been generated and is ready.
-      </p>
-      <div style={{ 
-        background: 'rgba(255, 255, 255, 0.1)', 
-        padding: '2rem', 
-        borderRadius: '12px',
-        maxWidth: '500px',
-        textAlign: 'center'
-      }}>
-        <h3 style={{ marginBottom: '1rem' }}>The Seven Witnesses</h3>
-        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
-          {speakers.map((speaker, idx) => (
-            <li key={speaker.id} style={{ marginBottom: '0.5rem', paddingLeft: '1.5rem', position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 0 }}>{idx + 1}.</span>
-              <strong>{speaker.name}</strong> — {speaker.epithet}
-              {speaker.isHeretic && <span style={{ color: '#d4af37', marginLeft: '0.5rem' }}>💔</span>}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div style={{ marginTop: '2rem', fontSize: '0.9rem', opacity: 0.9, maxWidth: '600px', textAlign: 'center' }}>
-        <p style={{ marginBottom: '1rem' }}>
-          <strong>Speeches Generated:</strong> All 7 speeches are available in the SPEECHES constant.
-        </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-          Full interactive presentation with AI voices, animated busts, and real-time subtitles can be implemented by adapting the IranianPresentation component structure.
-        </p>
-      </div>
-    </div>
+    <SymposiumPresentation
+      speakers={SPEAKER_CONFIG}
+      speeches={SPEECHES}
+      fallbackVoices={FALLBACK_VOICES}
+      matrixRoomUrl={MATRIX_ROOM_URL}
+      matrixRoomAlias={MATRIX_ROOM_ALIAS}
+      theme={THEME}
+      title="Symposion of the Green Fairy"
+      subtitle="Symposium on Absinthe"
+      languageSupport={LANGUAGE_SUPPORT}
+      autoPlayDefault={true}
+      showQAByDefault={false}
+    />
   );
 }
