@@ -1,15 +1,30 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AbsinthePresentation from '../../components/presentation/AbsinthePresentation';
+import { fetchSymposiumBySlugFromEdgeFunction } from '../../lib/supabase-edge-functions';
+
 const base = import.meta.env.BASE_URL;
+
+// Fetch symposium data from Supabase
+let symposium = null;
+try {
+  symposium = await fetchSymposiumBySlugFromEdgeFunction('absinthe');
+} catch (error) {
+  console.error('Failed to fetch symposium data:', error);
+}
 ---
 
-<BaseLayout title="Symposion of the Green Fairy - Interactive Presentation" description="Watch the Absinthe symposium with AI-generated voices, animated busts, and real-time subtitles">
+<BaseLayout title={symposium ? `${symposium.title} - Interactive Presentation` : "Symposion of the Green Fairy - Interactive Presentation"} description={symposium?.description || "Watch the Absinthe symposium with AI-generated voices, animated busts, and real-time subtitles"}>
   <div class="present-container">
     <div class="present-header">
       <a href={`${base}/absinthe/`} class="back-link">← Back to Symposium</a>
-      <h1>Symposion of the Green Fairy</h1>
-      <p class="present-subtitle">Interactive Presentation</p>
+      <h1>{symposium?.title || "Symposion of the Green Fairy"}</h1>
+      {symposium?.titleTranslation && (
+        <p class="present-subtitle">{symposium.titleTranslation}</p>
+      )}
+      {!symposium?.titleTranslation && (
+        <p class="present-subtitle">Interactive Presentation</p>
+      )}
     </div>
     
     <div class="present-content">

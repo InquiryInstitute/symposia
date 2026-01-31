@@ -1,6 +1,66 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { fetchSymposiaFromEdgeFunction, fetchFacultyByHandleFromEdgeFunction } from '../lib/supabase-edge-functions';
+import type { Symposium } from '../lib/supabase-edge-functions';
+
 const base = import.meta.env.BASE_URL;
+
+// Fetch featured symposia from Supabase
+let featuredSymposia: Symposium[] = [];
+let facultyNames: Record<string, string> = {};
+
+try {
+  featuredSymposia = await fetchSymposiaFromEdgeFunction(true);
+  
+  // Fetch faculty names for display
+  const allFacultyIds = new Set<string>();
+  featuredSymposia.forEach(s => {
+    s.faculty?.forEach(id => allFacultyIds.add(id));
+    if (s.heretic) allFacultyIds.add(s.heretic);
+  });
+  
+  // Fetch faculty names in parallel
+  const facultyPromises = Array.from(allFacultyIds).map(async (id) => {
+    try {
+      const faculty = await fetchFacultyByHandleFromEdgeFunction(id);
+      if (faculty) {
+        facultyNames[id] = faculty.surname 
+          ? `${faculty.name} ${faculty.surname}` 
+          : faculty.name;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch faculty ${id}:`, error);
+      // Use ID as fallback
+      facultyNames[id] = id.replace(/^a[.-]/, '').replace(/[.-]/g, ' ');
+    }
+  });
+  
+  await Promise.all(facultyPromises);
+} catch (error) {
+  console.error('Failed to fetch symposia:', error);
+  // Fallback to empty array - page will show "coming soon"
+}
+
+// Helper to get display name for faculty
+function getFacultyDisplayName(id: string): string {
+  return facultyNames[id] || id.replace(/^a[.-]/, '').replace(/[.-]/g, ' ');
+}
+
+// Helper to get flag/emoji for symposium
+function getSymposiumFlag(slug: string): string {
+  if (slug.includes('iran') || slug.includes('ayandeh')) return '🇮🇷';
+  if (slug.includes('absinthe')) return '🍃';
+  if (slug.includes('buddhist') || slug.includes('sangha')) return '🕯️';
+  return '📚';
+}
+
+// Helper to get theme class
+function getSymposiumTheme(slug: string, styleTheme?: string): string {
+  if (slug.includes('iran') || slug.includes('ayandeh') || styleTheme === 'persian') return 'iran-theme';
+  if (slug.includes('absinthe') || styleTheme === 'gothic') return 'absinthe-theme';
+  if (styleTheme === 'greek') return 'greek-theme';
+  return '';
+}
 ---
 
 <BaseLayout title="Home">
@@ -30,52 +90,37 @@ const base = import.meta.env.BASE_URL;
   <section class="symposia-list container">
     <h2>Featured Symposia</h2>
     
-    <a href={`${base}ayandeh-ye-iran/`} class="symposium-card iran-theme">
-      <div class="symposium-card-flag">🇮🇷</div>
-      <div class="symposium-card-content">
-        <h3>Symposion-e Āyandeh-ye Irān</h3>
-        <p class="symposium-card-native">سمپوزیون آینده‌ی ایران</p>
-        <p class="symposium-card-subtitle">Symposium on the Future of Iran</p>
-        <p class="symposium-card-desc">
-          Seven voices from Persia's intellectual heritage—poets, philosophers, scientists, 
-          and a prophet—convene to contemplate the destiny of their civilization.
-        </p>
-        <div class="symposium-card-speakers">
-          <span>Ferdowsi</span>
-          <span>Saʿdi</span>
-          <span>Hafez</span>
-          <span>Rumi</span>
-          <span>Avicenna</span>
-          <span>Al-Biruni</span>
-          <span class="special">Zarathustra ✦</span>
-        </div>
+    {featuredSymposia.length > 0 ? (
+      featuredSymposia.map((symposium) => (
+        <a href={`${base}${symposium.slug}/`} class={`symposium-card ${getSymposiumTheme(symposium.slug, symposium.styleTheme)}`}>
+          <div class="symposium-card-flag">{getSymposiumFlag(symposium.slug)}</div>
+          <div class="symposium-card-content">
+            <h3>{symposium.title}</h3>
+            {symposium.titleNative && (
+              <p class="symposium-card-native">{symposium.titleNative}</p>
+            )}
+            {symposium.titleTranslation && (
+              <p class="symposium-card-subtitle">{symposium.titleTranslation}</p>
+            )}
+            {symposium.description && (
+              <p class="symposium-card-desc">{symposium.description}</p>
+            )}
+            <div class="symposium-card-speakers">
+              {symposium.faculty?.map((facultyId) => (
+                <span>{getFacultyDisplayName(facultyId)}</span>
+              ))}
+              {symposium.heretic && (
+                <span class="special">{getFacultyDisplayName(symposium.heretic)} ✦</span>
+              )}
+            </div>
+          </div>
+        </a>
+      ))
+    ) : (
+      <div class="coming-soon">
+        <p class="text-muted">More symposia coming soon...</p>
       </div>
-    </a>
-
-    <a href={`${base}/absinthe/`} class="symposium-card absinthe-theme">
-      <div class="symposium-card-flag">🍃</div>
-      <div class="symposium-card-content">
-        <h3>Symposion of the Green Fairy</h3>
-        <p class="symposium-card-subtitle">Symposium on Absinthe</p>
-        <p class="symposium-card-desc">
-          Seven witnesses to absinthe gather—those who lived with it, loved it, abused it, 
-          ritualized it, and made art or magic through it. Not theorists, but practitioners.
-        </p>
-        <div class="symposium-card-speakers">
-          <span>Van Gogh</span>
-          <span>Crowley</span>
-          <span>Wilde</span>
-          <span>Toulouse-Lautrec</span>
-          <span>Pasteur</span>
-          <span>Foucault</span>
-          <span class="special">Verlaine ✦</span>
-        </div>
-      </div>
-    </a>
-
-    <div class="coming-soon">
-      <p class="text-muted">More symposia coming soon...</p>
-    </div>
+    )}
   </section>
 
   <section class="principles container">
