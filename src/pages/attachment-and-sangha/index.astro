@@ -1,0 +1,351 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchSymposiumBySlugFromEdgeFunction, fetchFacultyByHandleFromEdgeFunction } from '../../lib/supabase-edge-functions';
+import type { Symposium } from '../../lib/supabase-edge-functions';
+
+const base = import.meta.env.BASE_URL;
+
+// Fetch symposium data from Supabase
+let symposium: Symposium | null = null;
+let facultyNames: Record<string, string> = {};
+
+try {
+  symposium = await fetchSymposiumBySlugFromEdgeFunction('attachment-and-sangha');
+  
+  if (symposium) {
+    // Fetch faculty names
+    const allFacultyIds = new Set<string>();
+    symposium.faculty?.forEach(id => allFacultyIds.add(id));
+    if (symposium.heretic) allFacultyIds.add(symposium.heretic);
+    
+    const facultyPromises = Array.from(allFacultyIds).map(async (id) => {
+      try {
+        const faculty = await fetchFacultyByHandleFromEdgeFunction(id);
+        if (faculty) {
+          facultyNames[id] = faculty.surname 
+            ? `${faculty.name} ${faculty.surname}` 
+            : faculty.name;
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch faculty ${id}:`, error);
+        facultyNames[id] = id.replace(/^a[.-]/, '').replace(/[.-]/g, ' ');
+      }
+    });
+    
+    await Promise.all(facultyPromises);
+  }
+} catch (error) {
+  console.error('Failed to fetch symposium:', error);
+}
+
+// Fallback data if fetch fails
+const defaultSymposium: Symposium = {
+  id: 'attachment-and-sangha',
+  slug: 'attachment-and-sangha',
+  title: 'Attachment and Sangha',
+  description: 'Six Buddhist masters and one existential prosecutor examine the paradox: if attachment is the root of suffering, why do Buddhists build communities?',
+  type: 'symposium',
+  division: 'Buddhist Philosophy',
+  season: 'Timeless',
+  level: 'advanced',
+  priceUSD: 0,
+  faculty: ['a-gautama-buddha', 'a-nagarjuna', 'a-vasubandhu', 'a-dogen', 'a-ashoka'],
+  heretic: 'a-simone-weil',
+  sessionCount: 7,
+  speakingMinutes: 7,
+  centralQuestion: 'Attachment Is the Root of Suffering—So Why Do Buddhists Build Communities?',
+  themes: [
+    'Attachment & Non-Attachment',
+    'Community & Solitude',
+    'Form & Emptiness',
+    'Practice & Theory',
+    'Individual & Collective',
+    'Scaling Compassion',
+    'The Paradox of Refuge'
+  ],
+  setting: 'A timeless space where the constraints of history are suspended. Seven figures gather—six Buddhist masters spanning two and a half millennia, and one existential philosopher who presses Buddhism where it hurts most: attention, affliction, and the risk of consolation.',
+  featured: true,
+  styleTheme: 'default',
+  tagline: 'Attachment Is the Root of Suffering—So Why Do Buddhists Build Communities?',
+  overview: 'In a timeless space where the constraints of history are suspended, seven towering figures—six Buddhist masters and one existential prosecutor—gather to confront the most fundamental paradox of Buddhist practice: if attachment is the root of suffering, why do Buddhists build communities?'
+};
+
+const data = symposium || defaultSymposium;
+
+function getFacultyName(id: string): string {
+  return facultyNames[id] || id.replace(/^a[.-]/, '').replace(/[.-]/g, ' ');
+}
+---
+
+<BaseLayout title={data.title} description={data.description || data.tagline}>
+  <div class="buddhist-theme">
+    <section class="hero">
+      <div class="hero-pattern"></div>
+      <div class="container hero-content">
+        <h1>{data.title}</h1>
+        {data.tagline && (
+          <p class="hero-subtitle">{data.tagline}</p>
+        )}
+        <p class="hero-format">6 voices + 1 heretic × {data.speakingMinutes || 7} minutes • ~1 hour</p>
+        <div class="hero-ornament">🕯️ ✦ 🕯️</div>
+        
+        <!-- Watch Presentation CTA -->
+        <div class="hero-cta">
+          <a href={`${base}attachment-and-sangha/present`} class="cta-button primary" target="_blank">
+            <span class="cta-icon">▶</span>
+            Watch Presentation
+            <span class="cta-badge">with AI voices</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="overview container">
+      {data.overview && (
+        <p class="lead">{data.overview}</p>
+      )}
+      
+      {data.centralQuestion && (
+        <blockquote class="question-block">
+          <p class="question-english">{data.centralQuestion}</p>
+        </blockquote>
+      )}
+    </section>
+
+    <section class="speakers container">
+      <h2>The Six Masters</h2>
+      <p class="speakers-subtitle">Each speaks for {data.speakingMinutes || 7} minutes on the central question</p>
+      
+      <div class="speakers-grid">
+        {data.faculty?.slice(0, 6).map((facultyId) => (
+          <article class="speaker-card">
+            <div class="speaker-icon">🕯️</div>
+            <h3>{getFacultyName(facultyId)}</h3>
+            <p class="speaker-contribution"><strong>Brings:</strong> Buddhist perspective on attachment and community</p>
+          </article>
+        ))}
+      </div>
+
+      {data.heretic && (
+        <div class="heretic-section">
+          <p class="heretic-label">The Heretic</p>
+          <article class="speaker-card heretic">
+            <div class="speaker-icon">⚡</div>
+            <h3>{getFacultyName(data.heretic)}</h3>
+            <p class="speaker-contribution"><strong>Brings:</strong> Existential challenge to Buddhist community</p>
+          </article>
+        </div>
+      )}
+    </section>
+
+    {data.themes && data.themes.length > 0 && (
+      <section class="themes container">
+        <h2>Themes Explored</h2>
+        <ol class="themes-list">
+          {data.themes.map((theme) => (
+            <li><strong>{theme}</strong></li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    {data.setting && (
+      <section class="setting container">
+        <h2>Setting</h2>
+        <p class="setting-text">{data.setting}</p>
+      </section>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .buddhist-theme {
+    --primary-color: #d97706;
+    --secondary-color: #92400e;
+    --accent-color: #fbbf24;
+    --bg-color: #fffbeb;
+    --text-color: #1c1917;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #1c1917 0%, #3f3f46 100%);
+    color: #fffbeb;
+    padding: var(--space-8) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    );
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: 3rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .hero-subtitle {
+    font-size: 1.5rem;
+    font-style: italic;
+    margin-bottom: var(--space-2);
+    opacity: 0.9;
+  }
+
+  .hero-format {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: var(--space-3);
+  }
+
+  .hero-ornament {
+    font-size: 1.5rem;
+    margin: var(--space-4) 0;
+    opacity: 0.7;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    margin-top: var(--space-5);
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .cta-button:hover {
+    opacity: 0.9;
+  }
+
+  .cta-icon {
+    font-size: 1.2rem;
+  }
+
+  .cta-badge {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+
+  .overview {
+    padding: var(--space-7) var(--space-4);
+  }
+
+  .lead {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: var(--space-5);
+  }
+
+  .question-block {
+    border-left: 4px solid var(--primary-color);
+    padding: var(--space-4);
+    margin: var(--space-5) 0;
+    background: var(--bg-color);
+  }
+
+  .question-english {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+  }
+
+  .speakers {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .speakers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  .speaker-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: var(--space-4);
+    border-radius: 4px;
+  }
+
+  .speaker-card.heretic {
+    border-color: var(--primary-color);
+    border-width: 2px;
+  }
+
+  .speaker-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .speaker-card h3 {
+    margin-bottom: var(--space-1);
+  }
+
+  .heretic-section {
+    margin-top: var(--space-6);
+  }
+
+  .heretic-label {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    color: var(--primary-color);
+  }
+
+  .themes {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .themes-list {
+    list-style: decimal;
+    padding-left: var(--space-5);
+  }
+
+  .themes-list li {
+    margin-bottom: var(--space-3);
+    line-height: 1.6;
+  }
+
+  .setting {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .setting-text {
+    font-style: italic;
+    line-height: 1.8;
+    color: #4b5563;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+</style>

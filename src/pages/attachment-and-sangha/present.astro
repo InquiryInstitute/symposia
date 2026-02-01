@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchSymposiumBySlugFromEdgeFunction } from '../../lib/supabase-edge-functions';
+import type { Symposium } from '../../lib/supabase-edge-functions';
+
+const base = import.meta.env.BASE_URL;
+
+// Fetch symposium data from Supabase
+let symposium: Symposium | null = null;
+try {
+  symposium = await fetchSymposiumBySlugFromEdgeFunction('attachment-and-sangha');
+} catch (error) {
+  console.error('Failed to fetch symposium data:', error);
+}
+
+const title = symposium?.title || 'Attachment and Sangha';
+const subtitle = symposium?.tagline || symposium?.centralQuestion || 'Interactive Presentation';
+---
+
+<BaseLayout title={`${title} - Interactive Presentation`} description={`Watch the ${title} symposium with AI-generated voices, animated busts, and real-time subtitles`}>
+  <div class="present-container">
+    <div class="present-header">
+      <a href={`${base}attachment-and-sangha/`} class="back-link">← Back to Symposium</a>
+      <h1>{title}</h1>
+      <p class="present-subtitle">{subtitle}</p>
+    </div>
+    
+    <div class="present-content">
+      <p style="padding: 2rem; text-align: center; color: #666;">
+        Presentation component coming soon. Check back later for the interactive experience.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .present-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #fffbeb;
+  }
+
+  .present-header {
+    padding: var(--space-4) var(--space-4) var(--space-2);
+    background: linear-gradient(135deg, #1c1917 0%, #3f3f46 100%);
+    color: #fffbeb;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: #fbbf24;
+    text-decoration: none;
+    margin-bottom: var(--space-3);
+    font-size: 0.9rem;
+    transition: opacity 0.2s;
+  }
+
+  .back-link:hover {
+    opacity: 0.8;
+  }
+
+  .present-header h1 {
+    font-size: 2rem;
+    margin-bottom: var(--space-1);
+    color: #fffbeb;
+  }
+
+  .present-subtitle {
+    font-style: italic;
+    opacity: 0.9;
+    margin-bottom: 0;
+  }
+
+  .present-content {
+    flex: 1;
+    width: 100%;
+    min-height: calc(100vh - 200px);
+  }
+
+  @media (max-width: 768px) {
+    .present-header h1 {
+      font-size: 1.5rem;
+    }
+  }
+</style>
