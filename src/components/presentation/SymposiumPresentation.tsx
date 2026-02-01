@@ -181,8 +181,8 @@ export default function SymposiumPresentation({
                   voice: data.voice_id || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural',
                   voiceRate: data.voice_rate || fallbackVoices[speaker.id]?.rate || 1.0,
                   voicePitch: data.voice_pitch || 0,
-                  bustFrontalUrl: data.bust_frontal_url || data.bust_right_url || `/busts/${speaker.id.replace('a.', '')}/bust.png`,
-                  bustRightUrl: data.bust_right_url || `/busts/${speaker.id.replace('a.', '')}/bust.png`,
+                  bustFrontalUrl: data.bust_frontal_url || data.bust_right_url || `/busts/${speaker.id.replace(/^a[.-]/, '').replace(/[.-]/g, '-')}/bust.png`,
+                  bustRightUrl: data.bust_right_url || `/busts/${speaker.id.replace(/^a[.-]/, '').replace(/[.-]/g, '-')}/bust.png`,
                 };
               }
             } catch (err) {
@@ -190,7 +190,7 @@ export default function SymposiumPresentation({
             }
             // Use fallback
             const fallback = fallbackVoices[speaker.id] || { voice: 'en-US-GuyNeural', rate: 1.0 };
-            const fallbackBustUrl = `/busts/${speaker.id.replace('a.', '')}/bust.png`;
+            const fallbackBustUrl = `/busts/${speaker.id.replace(/^a[.-]/, '').replace(/[.-]/g, '-')}/bust.png`;
             return {
               ...speaker,
               voice: fallback.voice,
@@ -256,7 +256,8 @@ export default function SymposiumPresentation({
   // =========================================================================
 
   const getSpeechContent = useCallback((speakerId: string, lang: string): string => {
-    const speechKey = speakerId.replace('a.', 'a-');
+    // Normalize speaker ID to hyphen format for speech lookup
+    const speechKey = speakerId.replace(/^a\./, 'a-').replace(/\./g, '-');
     const baseSpeech = speeches[speechKey] || speeches[speakerId] || '';
     
     // If language support is provided, try to get language-specific speech
@@ -283,11 +284,11 @@ export default function SymposiumPresentation({
       return audioCacheRef.current.get(cacheKey)?.url;
     }
 
-    const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+    const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co';
     const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      console.error('Supabase environment variables are not set.');
+    if (!SUPABASE_ANON_KEY) {
+      console.warn('Supabase anon key not set. TTS will not work. Set PUBLIC_SUPABASE_ANON_KEY environment variable.');
       return null;
     }
 
