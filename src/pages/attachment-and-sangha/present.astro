@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AttachmentAndSanghaPresentation from '../../components/presentation/AttachmentAndSanghaPresentation';
 import { fetchSymposiumBySlugFromEdgeFunction } from '../../lib/supabase-edge-functions';
 import type { Symposium } from '../../lib/supabase-edge-functions';
 
@@ -26,9 +27,7 @@ const subtitle = symposium?.tagline || symposium?.centralQuestion || 'Interactiv
     </div>
     
     <div class="present-content">
-      <p style="padding: 2rem; text-align: center; color: #666;">
-        Presentation component coming soon. Check back later for the interactive experience.
-      </p>
+      <AttachmentAndSanghaPresentation client:load />
     </div>
   </div>
 </BaseLayout>
