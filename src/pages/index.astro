@@ -10,7 +10,16 @@ let featuredSymposia: Symposium[] = [];
 let facultyNames: Record<string, string> = {};
 
 try {
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co';
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseAnonKey) {
+    console.warn('PUBLIC_SUPABASE_ANON_KEY not set - symposia will not load');
+    console.warn('Set PUBLIC_SUPABASE_ANON_KEY in your environment or .env file');
+  }
+  
   featuredSymposia = await fetchSymposiaFromEdgeFunction(true);
+  console.log(`Fetched ${featuredSymposia.length} featured symposia`);
   
   // Fetch faculty names for display
   const allFacultyIds = new Set<string>();
@@ -38,6 +47,7 @@ try {
   await Promise.all(facultyPromises);
 } catch (error) {
   console.error('Failed to fetch symposia:', error);
+  console.error('Error details:', error instanceof Error ? error.message : String(error));
   // Fallback to empty array - page will show "coming soon"
 }
 

@@ -31,6 +31,9 @@ jobs:
         run: npm ci
       
       - name: Build with Astro
+        env:
+          PUBLIC_SUPABASE_URL: https://pilmscrodlitdrygabvo.supabase.co
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run build
       
       - name: Upload artifact
