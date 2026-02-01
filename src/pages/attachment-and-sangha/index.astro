@@ -49,8 +49,8 @@ const defaultSymposium: Symposium = {
   season: 'Timeless',
   level: 'advanced',
   priceUSD: 0,
-  faculty: ['a-gautama-buddha', 'a-nagarjuna', 'a-vasubandhu', 'a-dogen', 'a-ashoka'],
-  heretic: 'a-simone-weil',
+  faculty: ['a-gautama-buddha', 'a-nagarjuna', 'a-vasubandhu', 'a-dogen', 'a-ashoka', 'a-simone-weil'],
+  heretic: 'a-nietzsche',
   sessionCount: 7,
   speakingMinutes: 7,
   centralQuestion: 'Attachment Is the Root of Suffering—So Why Do Buddhists Build Communities?',
@@ -126,16 +126,6 @@ function getFacultyName(id: string): string {
         ))}
       </div>
 
-      {data.heretic && (
-        <div class="heretic-section">
-          <p class="heretic-label">The Heretic</p>
-          <article class="speaker-card heretic">
-            <div class="speaker-icon">⚡</div>
-            <h3>{getFacultyName(data.heretic)}</h3>
-            <p class="speaker-contribution"><strong>Brings:</strong> Existential challenge to Buddhist community</p>
-          </article>
-        </div>
-      )}
     </section>
 
     {data.themes && data.themes.length > 0 && (

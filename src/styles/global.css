@@ -112,7 +112,7 @@ a:hover { color: var(--color-accent-hover); }
   font-size: 1.25rem;
   font-weight: 400;
   color: var(--color-text);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em;
 }
 
 .site-nav-links {
