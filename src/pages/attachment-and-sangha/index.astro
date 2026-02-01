@@ -72,6 +72,24 @@ const defaultSymposium: Symposium = {
 
 const data = symposium || defaultSymposium;
 
+// Ensure all 6 masters are included (in case Supabase data is missing Simone Weil)
+if (data.faculty && !data.faculty.includes('a-simone-weil')) {
+  data.faculty.push('a-simone-weil');
+  // Fetch Simone Weil's name if not already fetched
+  if (!facultyNames['a-simone-weil']) {
+    try {
+      const faculty = await fetchFacultyByHandleFromEdgeFunction('a-simone-weil');
+      if (faculty) {
+        facultyNames['a-simone-weil'] = faculty.surname 
+          ? `${faculty.name} ${faculty.surname}` 
+          : faculty.name;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch Simone Weil:`, error);
+    }
+  }
+}
+
 function getFacultyName(id: string): string {
   return facultyNames[id] || id.replace(/^a[.-]/, '').replace(/[.-]/g, ' ');
 }
