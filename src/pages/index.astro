@@ -102,7 +102,7 @@ function getSymposiumTheme(slug: string, styleTheme?: string): string {
     
     {featuredSymposia.length > 0 ? (
       featuredSymposia.map((symposium) => (
-        <a href={`${base}${symposium.slug}/`} class={`symposium-card ${getSymposiumTheme(symposium.slug, symposium.styleTheme)}`}>
+        <a href={`${base}/${symposium.slug}/`} class={`symposium-card ${getSymposiumTheme(symposium.slug, symposium.styleTheme)}`}>
           <div class="symposium-card-flag">{getSymposiumFlag(symposium.slug)}</div>
           <div class="symposium-card-content">
             <h3>{symposium.title}</h3>
