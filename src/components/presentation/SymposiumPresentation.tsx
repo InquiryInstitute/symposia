@@ -322,10 +322,26 @@ export default function SymposiumPresentation({
           if (lastBoundary > MAX_CHARS * 0.7) {
             // Use sentence boundary if it's not too early
             splitIndex = lastBoundary + 1;
+          } else {
+            // If no good sentence boundary, try space or comma
+            const lastSpace = remaining.lastIndexOf(' ', MAX_CHARS);
+            const lastComma = remaining.lastIndexOf(',', MAX_CHARS);
+            const lastWordBoundary = Math.max(lastSpace, lastComma);
+            if (lastWordBoundary > MAX_CHARS * 0.5) {
+              splitIndex = lastWordBoundary + 1;
+            }
           }
           
-          chunks.push(remaining.substring(0, splitIndex).trim());
-          remaining = remaining.substring(splitIndex).trim();
+          // Ensure we never exceed MAX_CHARS
+          const chunkText = remaining.substring(0, Math.min(splitIndex, MAX_CHARS)).trim();
+          if (chunkText.length > MAX_CHARS) {
+            // Force split at MAX_CHARS if somehow still too long
+            chunks.push(remaining.substring(0, MAX_CHARS).trim());
+            remaining = remaining.substring(MAX_CHARS).trim();
+          } else {
+            chunks.push(chunkText);
+            remaining = remaining.substring(splitIndex).trim();
+          }
         }
       }
 
