@@ -156,22 +156,39 @@ async function generateAllSpeeches() {
       content: s.speech,
     }));
 
-    try {
-      const result = await generateSpeech(speaker, previousSpeeches);
-      speeches.push({
-        speaker,
-        speech: result.speech,
-        metadata: result.metadata,
-      });
+           let retryCount = 0;
+           const maxRetries = 2;
+           
+           while (retryCount <= maxRetries) {
+             try {
+               const result = await generateSpeech(speaker, previousSpeeches);
+               
+               // Check if we got a valid speech
+               if (!result.speech || result.speech.trim().length < 100) {
+                 throw new Error('Speech too short or empty');
+               }
+               
+               speeches.push({
+                 speaker,
+                 speech: result.speech,
+                 metadata: result.metadata,
+               });
+               break; // Success, exit retry loop
+             } catch (error) {
+               retryCount++;
+               if (retryCount > maxRetries) {
+                 console.error(`\n❌ Error generating speech for ${speaker.name} after ${maxRetries} retries:`, error);
+                 throw error;
+               }
+               console.log(`   ⚠️  Retry ${retryCount}/${maxRetries} for ${speaker.name}...`);
+               await new Promise(resolve => setTimeout(resolve, 5000 * retryCount));
+             }
+           }
 
-      // Add a small delay to avoid rate limiting
-      if (i < SPEAKERS.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    } catch (error) {
-      console.error(`\n❌ Error generating speech for ${speaker.name}:`, error);
-      throw error;
-    }
+           // Add a small delay to avoid rate limiting
+           if (i < SPEAKERS.length - 1) {
+             await new Promise(resolve => setTimeout(resolve, 2000));
+           }
   }
 
   console.log('\n' + '='.repeat(60));
