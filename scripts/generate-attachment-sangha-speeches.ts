@@ -180,7 +180,9 @@ async function generateAllSpeeches() {
                retryCount++;
                if (retryCount > maxRetries) {
                  console.error(`\n❌ Error generating speech for ${speaker.name} after ${maxRetries} retries:`, error);
-                 throw error;
+                 console.error(`   ⚠️  Skipping ${speaker.name} and continuing with remaining speakers...`);
+                 // Don't throw - continue with next speaker
+                 break;
                }
                console.log(`   ⚠️  Retry ${retryCount}/${maxRetries} for ${speaker.name}...`);
                await new Promise(resolve => setTimeout(resolve, 5000 * retryCount));
@@ -194,15 +196,25 @@ async function generateAllSpeeches() {
   }
 
   console.log('\n' + '='.repeat(60));
-  console.log('\n✅ All speeches generated successfully!\n');
+  if (speeches.length === SPEAKERS.length) {
+    console.log('\n✅ All speeches generated successfully!\n');
+  } else {
+    console.log(`\n⚠️  Generated ${speeches.length} out of ${SPEAKERS.length} speeches.\n`);
+    const missing = SPEAKERS.filter(s => !speeches.find(sp => sp.speaker.id === s.id));
+    if (missing.length > 0) {
+      console.log('Missing speeches:');
+      missing.forEach(s => console.log(`  - ${s.name} (${s.id})`));
+      console.log('');
+    }
+  }
 
   // Output the speeches in a format ready to paste into the component
   console.log('// Speech content for AttachmentAndSanghaPresentation component\n');
   console.log('const SPEECHES: Record<string, string> = {');
 
   for (const { speaker, speech } of speeches) {
-    // Use the speaker ID directly (already in hyphen format)
-    const key = speaker.id;
+    // Convert speaker ID from dot format to hyphen format for component
+    const key = speaker.id.replace(/\./g, '-');
     const escapedSpeech = speech
       .replace(/\\/g, '\\\\')
       .replace(/`/g, '\\`')
