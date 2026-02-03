@@ -35,43 +35,43 @@ interface Speaker {
 
 const SPEAKERS: Speaker[] = [
   {
-    id: 'a-gautama-buddha',
+    id: 'a.gautama.buddha',
     name: 'Gautama Buddha',
     epithet: 'Founder of the Sangha',
     focus: 'The original paradox-holder. You built the Sangha while teaching that attachment is the root of suffering. Defend sangha as instrumental, not sentimental. Spiritual friendship is the whole of the holy life. The Sangha as a raft—useful for crossing, to be abandoned once the other shore is reached.',
   },
   {
-    id: 'a-nagarjuna',
+    id: 'a.nagarjuna',
     name: 'Nāgārjuna',
     epithet: 'Philosopher of Emptiness',
     focus: 'Dissolve the false binary: attachment versus relationship. Community is empty, dependently arisen, non-ownable. Only what lacks essence can be shared without bondage. Show how sangha is empty yet necessary. Emptiness and dependent origination are one.',
   },
   {
-    id: 'a-vasubandhu',
+    id: 'a.vasubandhu',
     name: 'Vasubandhu',
     epithet: 'Psychologist of Mind',
     focus: 'Reframe attachment as cognitive, not emotional. Attachment is habitual patterning of consciousness that attributes permanence to what is fluid. Sangha as collective cognitive scaffold—not emotional refuge, but field for reconditioning perception. Liberation requires reconditioning perception, not escaping others.',
   },
   {
-    id: 'a-dogen',
+    id: 'a.dogen',
     name: 'Dōgen',
     epithet: 'Practice Radical',
     focus: 'Enlightenment is practice-with-others. There is no other enlightenment. Community is not optional—it is the path. To study the self is to forget the self—together. Attachment dissolves through form, not by avoiding it. The forms themselves are the teaching.',
   },
   {
-    id: 'a-ashoka',
+    id: 'a.ashoka',
     name: 'Ashoka',
     epithet: 'Political Realist',
     focus: 'What happens when Buddhist ethics scale? Can an empire be a sangha? Can compassion govern without coercion? Renunciation may free monks; community must guide empires. The question scales from monastery to empire. What did you learn from attempting to govern with dharma?',
   },
   {
-    id: 'a-simone-weil',
+    id: 'a.simone.weil',
     name: 'Simone Weil',
     epithet: 'Severe Mystic',
     focus: 'Attention as sacred act. Affliction cannot be bypassed. Community risks becoming consolation—a way to avoid the necessary confrontation with affliction. To love without illusion is rarer than to renounce the world. Does sangha enable true attention, or prevent it? Does community support or undermine the necessary solitude?',
   },
   {
-    id: 'a-nietzsche',
+    id: 'a.nietzsche',
     name: 'Friedrich Nietzsche',
     epithet: 'The Prosecutor',
     isHeretic: true,

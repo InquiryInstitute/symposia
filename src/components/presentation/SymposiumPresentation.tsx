@@ -760,22 +760,24 @@ export default function SymposiumPresentation({
                 transition: 'opacity 0.6s ease',
               }} />
               
-              {/* Bust */}
-              <div style={{
-                width: '224px',
-                height: '288px',
-                backgroundImage: `url(${state === 'speaking' && currentSpeaker.bustFrontalUrl 
-                  ? currentSpeaker.bustFrontalUrl 
-                  : currentSpeaker.bustRightUrl || currentSpeaker.bustFrontalUrl || '/busts/default.png'})`,
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-                transform: state === 'speaking' && !isTransitioning
-                  ? `translateY(${-jawOpen * 4}px) scale(${1 + jawOpen * 0.015})`
-                  : 'translateY(0) scale(1)',
-                transition: state === 'speaking' ? 'transform 100ms ease' : 'transform 0.5s ease',
-                filter: state === 'speaking' && !isTransitioning ? 'brightness(1.1) contrast(1.05)' : 'brightness(1)',
-              }} />
+              {/* Bust - only show if bust image exists */}
+              {(currentSpeaker.bustFrontalUrl || currentSpeaker.bustRightUrl) && (
+                <div style={{
+                  width: '224px',
+                  height: '288px',
+                  backgroundImage: `url(${state === 'speaking' && currentSpeaker.bustFrontalUrl 
+                    ? currentSpeaker.bustFrontalUrl 
+                    : currentSpeaker.bustRightUrl || currentSpeaker.bustFrontalUrl})`,
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  transform: state === 'speaking' && !isTransitioning
+                    ? `translateY(${-jawOpen * 4}px) scale(${1 + jawOpen * 0.015})`
+                    : 'translateY(0) scale(1)',
+                  transition: state === 'speaking' ? 'transform 100ms ease' : 'transform 0.5s ease',
+                  filter: state === 'speaking' && !isTransitioning ? 'brightness(1.1) contrast(1.05)' : 'brightness(1)',
+                }} />
+              )}
               
               {/* Speaker name plate */}
               <div style={{ 
