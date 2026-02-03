@@ -21,12 +21,12 @@ const SPEAKER_CONFIG: SpeakerConfig[] = [
 
 const FALLBACK_VOICES: Record<string, FallbackVoice> = {
   'a-gautama-buddha': { voice: 'en-IN-PrabhatNeural', rate: 0.95, language: 'en-IN', accent: 'Indian English, multilingual' },
-  'a-nagarjuna': { voice: 'en-US-GuyNeural', rate: 0.96, language: 'en-US', accent: 'Analytical, precise' },
-  'a-vasubandhu': { voice: 'en-US-GuyNeural', rate: 0.97, language: 'en-US', accent: 'Cognitive, systematic' },
-  'a-dogen': { voice: 'en-US-DavisNeural', rate: 0.94, language: 'en-US', accent: 'Direct, uncompromising' },
-  'a-ashoka': { voice: 'en-US-DavisNeural', rate: 0.95, language: 'en-US', accent: 'Reflective, weighty' },
-  'a-simone-weil': { voice: 'en-US-AriaNeural', rate: 0.96, language: 'en-US', accent: 'Intense, severe' },
-  'a-nietzsche': { voice: 'de-DE-KatjaNeural', rate: 0.98, language: 'de-DE', accent: 'Provocative, challenging' },
+  'a-nagarjuna': { voice: 'en-IN-PrabhatNeural', rate: 0.96, language: 'en-IN', accent: 'Indian English, analytical, precise' },
+  'a-vasubandhu': { voice: 'en-IN-PrabhatNeural', rate: 0.97, language: 'en-IN', accent: 'Indian English, cognitive, systematic' },
+  'a-dogen': { voice: 'ja-JP-KeitaNeural', rate: 0.94, language: 'ja-JP', accent: 'Japanese, direct, uncompromising' },
+  'a-ashoka': { voice: 'en-IN-PrabhatNeural', rate: 0.95, language: 'en-IN', accent: 'Indian English, regal, reflective, weighty' },
+  'a-simone-weil': { voice: 'fr-FR-DeniseNeural', rate: 0.96, language: 'fr-FR', accent: 'French, intense, severe, mystical' },
+  'a-nietzsche': { voice: 'de-DE-KatjaNeural', rate: 0.98, language: 'de-DE', accent: 'German, provocative, challenging, intense' },
 };
 
 // Placeholder speeches - these should be generated using ask-faculty edge function
