@@ -31,6 +31,7 @@ export interface SpeakerConfig {
 export interface Speaker extends SpeakerConfig {
   // Dynamic from Supabase:
   voice?: string;
+  voiceLanguage?: string;
   voiceRate?: number;
   voicePitch?: number;
   bustFrontalUrl?: string;
@@ -346,7 +347,7 @@ export default function SymposiumPresentation({
     const voiceId = speaker.voice || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural';
     const voiceRate = speaker.voiceRate || fallbackVoices[speaker.id]?.rate || 1.0;
     const voicePitch = speaker.voicePitch || 0;
-    const voiceLanguage = (speaker as any).voiceLanguage || fallbackVoices[speaker.id]?.language || 'en-US';
+    const voiceLanguage = speaker.voiceLanguage || fallbackVoices[speaker.id]?.language || 'en-US';
 
     const audioUrl = await getVoiceUrl(speaker.id, speechText, voiceId, voiceRate, voicePitch, voiceLanguage);
 
