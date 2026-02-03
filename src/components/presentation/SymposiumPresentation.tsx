@@ -516,8 +516,18 @@ export default function SymposiumPresentation({
         audioRef.current.pause();
         setState('paused');
       } else {
-        audioRef.current.play().catch(e => console.error("Error playing audio:", e));
-        setState('speaking');
+        // User clicked play - this is a user interaction, so autoplay should work now
+        audioRef.current.play()
+          .then(() => {
+            setState('speaking');
+            // Once user has interacted, enable autoplay for future speeches
+            setAutoPlay(true);
+            autoPlayRef.current = true;
+          })
+          .catch(e => {
+            console.error("Error playing audio:", e);
+            setState('paused');
+          });
       }
     } else if (currentSpeaker && dataLoaded) {
       const speechContent = getSpeechContent(currentSpeaker.id, audioLanguage);
