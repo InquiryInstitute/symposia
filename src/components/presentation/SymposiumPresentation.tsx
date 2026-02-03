@@ -164,7 +164,8 @@ export default function SymposiumPresentation({
   const pendingNextSpeechRef = useRef<number | null>(null);
   const currentChunkIndexRef = useRef(0);
   const audioCacheRef = useRef<Map<string, { url: string; audio: HTMLAudioElement }>>(new Map());
-  const ttsChunkTimingsRef = useRef<Array<{ startTime: number; endTime: number; text: string; charStart: number; charEnd: number }>>([]);
+  const ttsChunkTimingsRef = useRef<Array<{ charStart: number; charEnd: number; wordCount: number; chunkIndex: number }>>([]);
+  const totalWordsRef = useRef<number>(0);
   
   // =========================================================================
   // Load Speaker Data from Supabase
@@ -346,16 +347,16 @@ export default function SymposiumPresentation({
         }
       }
 
-      // Generate TTS for each chunk and track timing
+      // Generate TTS for each chunk and track text positions
       const audioBlobs: Blob[] = [];
-      const chunkTimings: Array<{ startTime: number; endTime: number; text: string; charStart: number; charEnd: number }> = [];
-      let cumulativeTime = 0;
+      const chunkTextPositions: Array<{ charStart: number; charEnd: number; wordCount: number }> = [];
       let charOffset = 0;
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         const chunkStartChar = charOffset;
         const chunkEndChar = charOffset + chunk.length;
+        const wordCount = chunk.split(/\s+/).filter(w => w.length > 0).length;
         
         const response = await fetch(edgeFunctionUrl, {
           method: 'POST',
@@ -382,29 +383,23 @@ export default function SymposiumPresentation({
         const blob = await response.blob();
         audioBlobs.push(blob);
         
-        // Create a temporary audio element to get the duration of this chunk
-        const chunkAudio = new Audio(URL.createObjectURL(blob));
-        await new Promise((resolve, reject) => {
-          chunkAudio.onloadedmetadata = () => {
-            const chunkDuration = chunkAudio.duration;
-            chunkTimings.push({
-              startTime: cumulativeTime,
-              endTime: cumulativeTime + chunkDuration,
-              text: chunk,
-              charStart: chunkStartChar,
-              charEnd: chunkEndChar,
-            });
-            cumulativeTime += chunkDuration;
-            charOffset = chunkEndChar;
-            URL.revokeObjectURL(chunkAudio.src);
-            resolve(undefined);
-          };
-          chunkAudio.onerror = reject;
+        chunkTextPositions.push({
+          charStart: chunkStartChar,
+          charEnd: chunkEndChar,
+          wordCount: wordCount,
         });
+        
+        charOffset = chunkEndChar;
       }
 
-      // Store chunk timings for caption synchronization
-      ttsChunkTimingsRef.current = chunkTimings;
+      // Store text positions for caption synchronization
+      // We'll calculate timings based on word count after we know the total duration
+      ttsChunkTimingsRef.current = chunkTextPositions.map((pos, i) => ({
+        charStart: pos.charStart,
+        charEnd: pos.charEnd,
+        wordCount: pos.wordCount,
+        chunkIndex: i,
+      })) as any;
 
       // Combine all audio blobs into a single blob
       const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
@@ -431,6 +426,7 @@ export default function SymposiumPresentation({
     setCurrentChunkIndex(0);
     currentChunkIndexRef.current = 0;
     ttsChunkTimingsRef.current = []; // Reset timings
+    totalWordsRef.current = 0; // Reset word count
 
     const voiceId = speaker.voice || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural';
     const voiceRate = speaker.voiceRate || fallbackVoices[speaker.id]?.rate || 1.0;
@@ -458,7 +454,42 @@ export default function SymposiumPresentation({
     setCaptionChunks(chunks);
 
     audioRef.current.onloadedmetadata = () => {
-      setAudioDuration(audioRef.current?.duration || 0);
+      const duration = audioRef.current?.duration || 0;
+      setAudioDuration(duration);
+      
+      // Calculate timing for each TTS chunk based on word count
+      const timings = ttsChunkTimingsRef.current;
+      const totalWords = totalWordsRef.current || speechText.split(/\s+/).filter(w => w.length > 0).length;
+      totalWordsRef.current = totalWords;
+      
+      if (timings.length > 0 && totalWords > 0) {
+        // Estimate speaking rate: ~150 words per minute at normal rate
+        // Adjust for voice rate
+        const wordsPerSecond = (150 / 60) * voiceRate;
+        const totalEstimatedDuration = totalWords / wordsPerSecond;
+        
+        // Scale to actual duration
+        const scaleFactor = duration / totalEstimatedDuration;
+        
+        // Calculate start/end times for each chunk based on word count
+        let cumulativeTime = 0;
+        const chunkTimings = timings.map((timing) => {
+          const chunkDuration = (timing.wordCount / wordsPerSecond) * scaleFactor;
+          const startTime = cumulativeTime;
+          const endTime = cumulativeTime + chunkDuration;
+          cumulativeTime = endTime;
+          return {
+            startTime,
+            endTime,
+            charStart: timing.charStart,
+            charEnd: timing.charEnd,
+          };
+        });
+        
+        // Store calculated timings
+        ttsChunkTimingsRef.current = chunkTimings as any;
+      }
+      
       setIsLoading(false);
       
       // Try to play, but handle autoplay restrictions gracefully
@@ -484,13 +515,16 @@ export default function SymposiumPresentation({
 
       // Update subtitles based on TTS chunk timings
       const timings = ttsChunkTimingsRef.current;
-      if (timings.length > 0) {
+      if (timings.length > 0 && 'startTime' in timings[0]) {
         // Find which TTS chunk we're currently in
         let currentTTSChunkIndex = -1;
         for (let i = 0; i < timings.length; i++) {
-          if (current >= timings[i].startTime && current < timings[i].endTime) {
-            currentTTSChunkIndex = i;
-            break;
+          const timing = timings[i] as any;
+          if (timing.startTime !== undefined && timing.endTime !== undefined) {
+            if (current >= timing.startTime && current < timing.endTime) {
+              currentTTSChunkIndex = i;
+              break;
+            }
           }
         }
         
@@ -500,36 +534,38 @@ export default function SymposiumPresentation({
         }
         
         if (currentTTSChunkIndex >= 0) {
-          const ttsChunk = timings[currentTTSChunkIndex];
-          // Calculate character position within the current TTS chunk
-          const progressInChunk = (current - ttsChunk.startTime) / (ttsChunk.endTime - ttsChunk.startTime);
-          const charPosition = Math.floor(ttsChunk.charStart + (ttsChunk.charEnd - ttsChunk.charStart) * progressInChunk);
-          
-          // Find which caption chunk corresponds to this character position
-          let captionChunkIndex = 0;
-          let charCount = 0;
-          for (let i = 0; i < chunks.length; i++) {
-            const chunkCharCount = chunks[i].length;
-            if (charPosition >= charCount && charPosition < charCount + chunkCharCount) {
-              captionChunkIndex = i;
-              break;
-            }
-            charCount += chunkCharCount;
-          }
-          
-          if (captionChunkIndex !== currentChunkIndexRef.current) {
-            let captionText = chunks[captionChunkIndex] || '';
+          const ttsChunk = timings[currentTTSChunkIndex] as any;
+          if (ttsChunk.startTime !== undefined && ttsChunk.endTime !== undefined) {
+            // Calculate character position within the current TTS chunk
+            const progressInChunk = Math.max(0, Math.min(1, (current - ttsChunk.startTime) / (ttsChunk.endTime - ttsChunk.startTime)));
+            const charPosition = Math.floor(ttsChunk.charStart + (ttsChunk.charEnd - ttsChunk.charStart) * progressInChunk);
             
-            // If caption language is different, try to extract native text
-            if (captionLanguage !== audioLanguage && languageSupport?.extractNativeText) {
-              const nativeText = languageSupport.extractNativeText(captionText);
-              if (nativeText) {
-                captionText = nativeText;
+            // Find which caption chunk corresponds to this character position
+            let captionChunkIndex = 0;
+            let charCount = 0;
+            for (let i = 0; i < chunks.length; i++) {
+              const chunkCharCount = chunks[i].length;
+              if (charPosition >= charCount && charPosition < charCount + chunkCharCount) {
+                captionChunkIndex = i;
+                break;
               }
+              charCount += chunkCharCount;
             }
             
-            setSubtitles(captionText);
-            currentChunkIndexRef.current = captionChunkIndex;
+            if (captionChunkIndex !== currentChunkIndexRef.current) {
+              let captionText = chunks[captionChunkIndex] || '';
+              
+              // If caption language is different, try to extract native text
+              if (captionLanguage !== audioLanguage && languageSupport?.extractNativeText) {
+                const nativeText = languageSupport.extractNativeText(captionText);
+                if (nativeText) {
+                  captionText = nativeText;
+                }
+              }
+              
+              setSubtitles(captionText);
+              currentChunkIndexRef.current = captionChunkIndex;
+            }
           }
         }
       } else {
