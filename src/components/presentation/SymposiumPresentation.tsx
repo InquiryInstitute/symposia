@@ -164,6 +164,7 @@ export default function SymposiumPresentation({
   const pendingNextSpeechRef = useRef<number | null>(null);
   const currentChunkIndexRef = useRef(0);
   const audioCacheRef = useRef<Map<string, { url: string; audio: HTMLAudioElement }>>(new Map());
+  const ttsChunkTimingsRef = useRef<Array<{ startTime: number; endTime: number; text: string; charStart: number; charEnd: number }>>([]);
   
   // =========================================================================
   // Load Speaker Data from Supabase
@@ -345,10 +346,17 @@ export default function SymposiumPresentation({
         }
       }
 
-      // Generate TTS for each chunk
+      // Generate TTS for each chunk and track timing
       const audioBlobs: Blob[] = [];
+      const chunkTimings: Array<{ startTime: number; endTime: number; text: string; charStart: number; charEnd: number }> = [];
+      let cumulativeTime = 0;
+      let charOffset = 0;
+
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
+        const chunkStartChar = charOffset;
+        const chunkEndChar = charOffset + chunk.length;
+        
         const response = await fetch(edgeFunctionUrl, {
           method: 'POST',
           headers: {
@@ -373,7 +381,30 @@ export default function SymposiumPresentation({
 
         const blob = await response.blob();
         audioBlobs.push(blob);
+        
+        // Create a temporary audio element to get the duration of this chunk
+        const chunkAudio = new Audio(URL.createObjectURL(blob));
+        await new Promise((resolve, reject) => {
+          chunkAudio.onloadedmetadata = () => {
+            const chunkDuration = chunkAudio.duration;
+            chunkTimings.push({
+              startTime: cumulativeTime,
+              endTime: cumulativeTime + chunkDuration,
+              text: chunk,
+              charStart: chunkStartChar,
+              charEnd: chunkEndChar,
+            });
+            cumulativeTime += chunkDuration;
+            charOffset = chunkEndChar;
+            URL.revokeObjectURL(chunkAudio.src);
+            resolve(undefined);
+          };
+          chunkAudio.onerror = reject;
+        });
       }
+
+      // Store chunk timings for caption synchronization
+      ttsChunkTimingsRef.current = chunkTimings;
 
       // Combine all audio blobs into a single blob
       const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
@@ -399,6 +430,7 @@ export default function SymposiumPresentation({
     setSpeechProgress(0);
     setCurrentChunkIndex(0);
     currentChunkIndexRef.current = 0;
+    ttsChunkTimingsRef.current = []; // Reset timings
 
     const voiceId = speaker.voice || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural';
     const voiceRate = speaker.voiceRate || fallbackVoices[speaker.id]?.rate || 1.0;
@@ -450,25 +482,77 @@ export default function SymposiumPresentation({
       setAudioCurrentTime(current);
       setSpeechProgress((current / duration) * 100);
 
-      // Update subtitles
-      const chunkIndex = Math.min(
-        Math.floor((current / duration) * chunks.length),
-        chunks.length - 1
-      );
-      
-      if (chunkIndex !== currentChunkIndexRef.current) {
-        let captionText = chunks[chunkIndex] || '';
-        
-        // If caption language is different, try to extract native text
-        if (captionLanguage !== audioLanguage && languageSupport?.extractNativeText) {
-          const nativeText = languageSupport.extractNativeText(captionText);
-          if (nativeText) {
-            captionText = nativeText;
+      // Update subtitles based on TTS chunk timings
+      const timings = ttsChunkTimingsRef.current;
+      if (timings.length > 0) {
+        // Find which TTS chunk we're currently in
+        let currentTTSChunkIndex = -1;
+        for (let i = 0; i < timings.length; i++) {
+          if (current >= timings[i].startTime && current < timings[i].endTime) {
+            currentTTSChunkIndex = i;
+            break;
           }
         }
         
-        setSubtitles(captionText);
-        currentChunkIndexRef.current = chunkIndex;
+        // If we're past all chunks, use the last one
+        if (currentTTSChunkIndex === -1 && timings.length > 0) {
+          currentTTSChunkIndex = timings.length - 1;
+        }
+        
+        if (currentTTSChunkIndex >= 0) {
+          const ttsChunk = timings[currentTTSChunkIndex];
+          // Calculate character position within the current TTS chunk
+          const progressInChunk = (current - ttsChunk.startTime) / (ttsChunk.endTime - ttsChunk.startTime);
+          const charPosition = Math.floor(ttsChunk.charStart + (ttsChunk.charEnd - ttsChunk.charStart) * progressInChunk);
+          
+          // Find which caption chunk corresponds to this character position
+          let captionChunkIndex = 0;
+          let charCount = 0;
+          for (let i = 0; i < chunks.length; i++) {
+            const chunkCharCount = chunks[i].length;
+            if (charPosition >= charCount && charPosition < charCount + chunkCharCount) {
+              captionChunkIndex = i;
+              break;
+            }
+            charCount += chunkCharCount;
+          }
+          
+          if (captionChunkIndex !== currentChunkIndexRef.current) {
+            let captionText = chunks[captionChunkIndex] || '';
+            
+            // If caption language is different, try to extract native text
+            if (captionLanguage !== audioLanguage && languageSupport?.extractNativeText) {
+              const nativeText = languageSupport.extractNativeText(captionText);
+              if (nativeText) {
+                captionText = nativeText;
+              }
+            }
+            
+            setSubtitles(captionText);
+            currentChunkIndexRef.current = captionChunkIndex;
+          }
+        }
+      } else {
+        // Fallback to old method if timings aren't available
+        const chunkIndex = Math.min(
+          Math.floor((current / duration) * chunks.length),
+          chunks.length - 1
+        );
+        
+        if (chunkIndex !== currentChunkIndexRef.current) {
+          let captionText = chunks[chunkIndex] || '';
+          
+          // If caption language is different, try to extract native text
+          if (captionLanguage !== audioLanguage && languageSupport?.extractNativeText) {
+            const nativeText = languageSupport.extractNativeText(captionText);
+            if (nativeText) {
+              captionText = nativeText;
+            }
+          }
+          
+          setSubtitles(captionText);
+          currentChunkIndexRef.current = chunkIndex;
+        }
       }
       
       setJawOpen(Math.sin(current * 10) * 0.5 + 0.5); // Simple jaw animation

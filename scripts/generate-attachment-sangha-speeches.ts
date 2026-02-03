@@ -92,7 +92,9 @@ async function generateSpeech(
 
   const requestBody = {
     faculty_id: speaker.id,
-    message: `Generate your symposium speech for the Attachment and Sangha symposium. Your focus: ${speaker.focus}. This is a gathering in a timeless space where seven figures examine the paradox: if attachment is the root of suffering, why do Buddhists build communities? You are ${speaker.name}, ${speaker.epithet}.`,
+    message: `Generate your symposium speech for the Attachment and Sangha symposium. Your focus: ${speaker.focus}. This is a gathering in a timeless space where seven figures examine the paradox: if attachment is the root of suffering, why do Buddhists build communities? You are ${speaker.name}, ${speaker.epithet}. 
+
+CRITICAL: Speak in FIRST PERSON as yourself. Use "I", "my", "me", "we" when referring to yourself or your actions. NEVER refer to yourself in third person (e.g., "the Buddha said" or "Buddha taught"). You ARE speaking, so say "I taught" or "I said" or "in my teaching".`,
     context: 'symposium' as const,
     context_key: 'attachment-and-sangha',
     generate_speech: true,
