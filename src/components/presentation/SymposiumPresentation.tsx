@@ -428,7 +428,20 @@ export default function SymposiumPresentation({
     audioRef.current.onloadedmetadata = () => {
       setAudioDuration(audioRef.current?.duration || 0);
       setIsLoading(false);
-      audioRef.current?.play().catch(e => console.error("Error playing audio:", e));
+      
+      // Try to play, but handle autoplay restrictions gracefully
+      if (autoPlayRef.current) {
+        audioRef.current?.play().catch((e) => {
+          console.warn("Autoplay blocked by browser. User interaction required:", e);
+          // Autoplay was blocked - set to paused state so user can click play
+          setState('paused');
+          setAutoPlay(false);
+          autoPlayRef.current = false;
+        });
+      } else {
+        // Auto-play is disabled, stay in paused state
+        setState('paused');
+      }
     };
 
     audioRef.current.ontimeupdate = () => {
