@@ -179,6 +179,7 @@ export default function SymposiumPresentation({
                 return {
                   ...speaker,
                   voice: data.voice_id || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural',
+                  voiceLanguage: data.voice_language || fallbackVoices[speaker.id]?.language || 'en-US',
                   voiceRate: data.voice_rate || fallbackVoices[speaker.id]?.rate || 1.0,
                   voicePitch: data.voice_pitch || 0,
                   bustFrontalUrl: data.bust_frontal_url || data.bust_right_url || `/busts/${speaker.id.replace(/^a[.-]/, '').replace(/[.-]/g, '-')}/bust.png`,
@@ -189,11 +190,12 @@ export default function SymposiumPresentation({
               console.warn(`Failed to load data for ${speaker.id}:`, err);
             }
             // Use fallback
-            const fallback = fallbackVoices[speaker.id] || { voice: 'en-US-GuyNeural', rate: 1.0 };
+            const fallback = fallbackVoices[speaker.id] || { voice: 'en-US-GuyNeural', rate: 1.0, language: 'en-US' };
             const fallbackBustUrl = `/busts/${speaker.id.replace(/^a[.-]/, '').replace(/[.-]/g, '-')}/bust.png`;
             return {
               ...speaker,
               voice: fallback.voice,
+              voiceLanguage: fallback.language || 'en-US',
               voiceRate: fallback.rate,
               voicePitch: 0,
               bustFrontalUrl: fallbackBustUrl,
@@ -344,7 +346,7 @@ export default function SymposiumPresentation({
     const voiceId = speaker.voice || fallbackVoices[speaker.id]?.voice || 'en-US-GuyNeural';
     const voiceRate = speaker.voiceRate || fallbackVoices[speaker.id]?.rate || 1.0;
     const voicePitch = speaker.voicePitch || 0;
-    const voiceLanguage = fallbackVoices[speaker.id]?.language || 'en-US';
+    const voiceLanguage = (speaker as any).voiceLanguage || fallbackVoices[speaker.id]?.language || 'en-US';
 
     const audioUrl = await getVoiceUrl(speaker.id, speechText, voiceId, voiceRate, voicePitch, voiceLanguage);
 
