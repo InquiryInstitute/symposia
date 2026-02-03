@@ -296,32 +296,72 @@ export default function SymposiumPresentation({
     }
 
     const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/tts`;
+    const MAX_CHARS = 4500; // Leave buffer below 5000 limit
     
     try {
-      const response = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          text: text,
-          voice_id: voiceId,
-          voice_rate: voiceRate,
-          voice_pitch: voicePitch,
-          voice_language: language,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('TTS Edge Function error:', errorData);
-        throw new Error(`TTS failed: ${errorData.error || response.statusText}`);
+      // Split text into chunks if it's too long
+      const chunks: string[] = [];
+      if (text.length <= MAX_CHARS) {
+        chunks.push(text);
+      } else {
+        // Split at sentence boundaries when possible
+        let remaining = text;
+        while (remaining.length > 0) {
+          if (remaining.length <= MAX_CHARS) {
+            chunks.push(remaining);
+            break;
+          }
+          
+          // Try to split at sentence boundary (., !, ?)
+          let splitIndex = MAX_CHARS;
+          const lastSentenceEnd = remaining.lastIndexOf('.', MAX_CHARS);
+          const lastExclamation = remaining.lastIndexOf('!', MAX_CHARS);
+          const lastQuestion = remaining.lastIndexOf('?', MAX_CHARS);
+          const lastBoundary = Math.max(lastSentenceEnd, lastExclamation, lastQuestion);
+          
+          if (lastBoundary > MAX_CHARS * 0.7) {
+            // Use sentence boundary if it's not too early
+            splitIndex = lastBoundary + 1;
+          }
+          
+          chunks.push(remaining.substring(0, splitIndex).trim());
+          remaining = remaining.substring(splitIndex).trim();
+        }
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      // Generate TTS for each chunk
+      const audioBlobs: Blob[] = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const response = await fetch(edgeFunctionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            text: chunk,
+            voice: voiceId,
+            rate: voiceRate,
+            pitch: voicePitch,
+            language,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: response.statusText }));
+          console.error(`TTS Edge Function error for chunk ${i + 1}/${chunks.length}:`, errorData);
+          throw new Error(`TTS failed: ${errorData.error || response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        audioBlobs.push(blob);
+      }
+
+      // Combine all audio blobs into a single blob
+      const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(combinedBlob);
       audioCacheRef.current.set(cacheKey, { url, audio: new Audio(url) });
       return url;
     } catch (error) {
