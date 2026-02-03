@@ -19,12 +19,15 @@ export async function fetchFacultyByHandleFromEdgeFunction(handle: string) {
   const functionUrl = `${baseUrl}/faculty?handle=${encodeURIComponent(handle)}`;
   
   const requestHeaders: Record<string, string> = {
-    'apikey': anonKey,
     'Content-Type': 'application/json',
   }
   
-  if (anonKey && anonKey.startsWith('eyJ')) {
-    requestHeaders['Authorization'] = `Bearer ${anonKey}`;
+  // Only add auth headers if anon key is available
+  if (anonKey) {
+    requestHeaders['apikey'] = anonKey;
+    if (anonKey.startsWith('eyJ')) {
+      requestHeaders['Authorization'] = `Bearer ${anonKey}`;
+    }
   }
   
   const controller = new AbortController();
@@ -40,19 +43,28 @@ export async function fetchFacultyByHandleFromEdgeFunction(handle: string) {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      if (response.status === 404) return null;
+      if (response.status === 404) {
+        // Faculty not found - this is expected for some speakers
+        return null;
+      }
+      // Don't log errors if anon key is missing (expected in production builds)
+      if (response.status === 401 && !anonKey) {
+        return null;
+      }
       const errorText = await response.text();
-      console.error(`Edge Function faculty failed:`, response.status, errorText);
-      throw new Error(`Edge Function faculty failed: ${response.status}`);
+      console.error(`Edge Function faculty failed for ${handle}:`, response.status, errorText);
+      return null; // Return null instead of throwing to allow fallbacks
     }
     
     return response.json();
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('Request timed out');
+      // Timeout - return null to allow fallbacks
+      return null;
     }
-    throw error;
+    // Network errors - return null to allow fallbacks
+    return null;
   }
 }
 

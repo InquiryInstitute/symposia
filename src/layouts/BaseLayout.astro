@@ -7,7 +7,8 @@ interface Props {
 }
 
 const { title, description = "Imagined dialogues between history's great minds" } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL || '/';
+const baseWithSlash = base.endsWith('/') ? base : `${base}/`;
 ---
 
 <!DOCTYPE html>
@@ -17,15 +18,15 @@ const base = import.meta.env.BASE_URL;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content={description}>
   <title>{title} | Symposia</title>
-  <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`}>
+  <link rel="icon" type="image/svg+xml" href={`${baseWithSlash}favicon.svg`}>
 </head>
 <body>
   <nav class="site-nav">
     <div class="container-wide site-nav-inner">
-      <a href={base} class="site-logo">SYMPOSIA</a>
+      <a href={baseWithSlash} class="site-logo">SYMPOSIA</a>
       <ul class="site-nav-links">
-        <li><a href={base}>Home</a></li>
-        <li><a href={`${base}about`}>About</a></li>
+        <li><a href={baseWithSlash}>Home</a></li>
+        <li><a href={`${baseWithSlash}about`}>About</a></li>
         <li><a href="https://inquiry.institute" target="_blank">Inquiry Institute</a></li>
       </ul>
     </div>
